@@ -1,0 +1,12 @@
+services:
+  beezap:
+    build: .
+    container_name: beezap_backend
+    restart: always # Garante que o container reinicie com o Docker ou a VM
+    ports:
+      - "4000:4000"
+    volumes:
+      # Mapeia a pasta de sessão para o host para persistir o login do WhatsApp
+      - ./session:/app/session
+      # Mapeia a pasta de scripts do Zabbix para dentro do container
+      - /usr/lib/zabbix/alertscripts:/usr/lib/zabbix/alertscripts:ro
