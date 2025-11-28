@@ -19,15 +19,15 @@ const ZABBIX_GRAPH_DIR = 'zabbix_graphs';
 
 if (!fs.existsSync(ZABBIX_GRAPH_DIR)) fs.mkdirSync(ZABBIX_GRAPH_DIR);
 
-// Garante que a pasta de sessão existe antes de inicializar o cliente WhatsApp
-const SESSION_DIR = path.resolve(__dirname, 'session');
+// Garante que a pasta de sessão será criada no mesmo diretório do server.js
+const SESSION_DIR = path.join(__dirname, 'session');
 if (!fs.existsSync(SESSION_DIR)) {
     fs.mkdirSync(SESSION_DIR, { recursive: true });
 }
 
 const client = new Client({
     authStrategy: new LocalAuth({
-        dataPath: SESSION_DIR // Caminho absoluto e garantido
+        dataPath: SESSION_DIR // Caminho absoluto, sempre junto ao server.js
     }),
     puppeteer: {
         headless: true,
