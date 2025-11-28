@@ -36,7 +36,13 @@ const client = new Client({
 // Eventos
 client.on('loading_screen', (percent, message) => console.log('Carregando', percent, message));
 
-client.on('qr', qr => qrcode.generate(qr, { small: true }));
+let qrShown = false;
+client.on('qr', qr => {
+    if (!qrShown) {
+        qrcode.generate(qr, { small: true });
+        qrShown = true;
+    }
+});
 client.on('authenticated', () => console.log('Autenticado'));
 client.on('auth_failure', msg => console.error('Falha na autenticação', msg));
 
