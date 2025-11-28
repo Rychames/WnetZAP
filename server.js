@@ -46,21 +46,19 @@ client.on('qr', qr => {
 client.on('authenticated', () => console.log('Autenticado'));
 client.on('auth_failure', msg => console.error('Falha na autenticação', msg));
 
+// Inicializa cliente WhatsApp e só ativa o servidor Express após autenticação
 client.on('ready', async () => {
     console.log('CLIENTE DO WHATSAPP PRONTO!');
-
-    // Aguarda 3s para evitar erro de contexto destruído
     await new Promise(r => setTimeout(r, 3000));
+    // Inicializa o servidor Express somente após o WhatsApp estar pronto
+    app.listen(port, () => {
+        console.log(`Servidor da API rodando em http://localhost:${port}`);
+        console.log('API pronta para receber requisições.');
+    });
 });
 
 // Inicializa cliente
 client.initialize();
-
-// Inicializa o servidor Express (fora do evento 'ready')
-app.listen(port, () => {
-    console.log(`Servidor da API rodando em http://localhost:${port}`);
-    console.log('API pronta para receber requisições.');
-});
 
 // Express middleware
 app.use(express.json());
