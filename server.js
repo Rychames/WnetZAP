@@ -21,7 +21,9 @@ if (!fs.existsSync(ZABBIX_GRAPH_DIR)) fs.mkdirSync(ZABBIX_GRAPH_DIR);
 
 // Puppeteer completo via whatsapp-web.js
 const client = new Client({
-    authStrategy: new LocalAuth(),
+    authStrategy: new LocalAuth({
+        dataPath: './session' // Persistência garantida no volume Docker
+    }),
     puppeteer: {
         headless: true,
         // executablePath: '/usr/bin/google-chrome-stable', // Descomente se o chromium estiver instalado globalmente
