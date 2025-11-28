@@ -45,11 +45,15 @@ client.on('ready', async () => {
 
     // Aguarda 3s para evitar erro de contexto destruído
     await new Promise(r => setTimeout(r, 3000));
+});
 
-    app.listen(port, () => {
-        console.log(`Servidor da API rodando em http://localhost:${port}`);
-        console.log('API pronta para receber requisições.');
-    });
+// Inicializa cliente
+client.initialize();
+
+// Inicializa o servidor Express (fora do evento 'ready')
+app.listen(port, () => {
+    console.log(`Servidor da API rodando em http://localhost:${port}`);
+    console.log('API pronta para receber requisições.');
 });
 
 // Express middleware
@@ -156,7 +160,3 @@ app.get('/api/groups', async (req, res) => {
         res.status(500).json({ error: 'Erro ao obter a lista de grupos.' });
     }
 });
-
-
-// Inicializa cliente
-client.initialize();
