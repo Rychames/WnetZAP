@@ -19,16 +19,19 @@ const ZABBIX_GRAPH_DIR = 'zabbix_graphs';
 
 if (!fs.existsSync(ZABBIX_GRAPH_DIR)) fs.mkdirSync(ZABBIX_GRAPH_DIR);
 
-// Puppeteer completo via whatsapp-web.js
+// Garante que a pasta de sessão existe antes de inicializar o cliente WhatsApp
+const SESSION_DIR = path.resolve(__dirname, 'session');
+if (!fs.existsSync(SESSION_DIR)) {
+    fs.mkdirSync(SESSION_DIR, { recursive: true });
+}
+
 const client = new Client({
     authStrategy: new LocalAuth({
-        dataPath: './session' // Persistência garantida no volume Docker
+        dataPath: SESSION_DIR // Caminho absoluto e garantido
     }),
     puppeteer: {
         headless: true,
-        // executablePath: '/usr/bin/google-chrome-stable', // Descomente se o chromium estiver instalado globalmente
         args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        // Aumenta o timeout para dar mais tempo para a página carregar
         timeout: 120000 // 120 segundos
     }
 });
@@ -46,8 +49,9 @@ client.on('qr', qr => {
 client.on('authenticated', () => console.log('Autenticado'));
 client.on('auth_failure', msg => console.error('Falha na autenticação', msg));
 
-// Inicializa cliente WhatsApp e só ativa o servidor Express após autenticação
+let whatsappReady = false;
 client.on('ready', async () => {
+    whatsappReady = true;
     console.log('CLIENTE DO WHATSAPP PRONTO!');
     await new Promise(r => setTimeout(r, 3000));
     // Inicializa o servidor Express somente após o WhatsApp estar pronto
@@ -146,19 +150,19 @@ app.post('/api/zabbix-graph', (req, res) => {
 
 // Rota para listar grupos (funcionalidade do beeid3.js)
 app.get('/api/groups', async (req, res) => {
+    if (!whatsappReady) {
+        return res.status(503).json({ error: 'WhatsApp não está pronto. Tente novamente em alguns segundos.' });
+    }
     console.log(getCurrentTime(), '- Recebida requisição para listar grupos.');
     try {
         const chats = await client.getChats();
         const groupChats = chats.filter(chat => chat.isGroup);
-
         const groupInfo = groupChats.map(chat => ({
             id: chat.id._serialized,
             name: chat.name
         }));
-
         console.log(getCurrentTime(), `- Total de grupos encontrados: ${groupInfo.length}`);
         res.json(groupInfo);
-
     } catch (error) {
         console.error(getCurrentTime(), '- Erro ao obter lista de grupos:', error);
         res.status(500).json({ error: 'Erro ao obter a lista de grupos.' });
