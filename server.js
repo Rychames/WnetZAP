@@ -17,17 +17,25 @@ if (!Client.prototype.__patchedGetWWebVersion) {
     const originalGetWWebVersion = Client.prototype.getWWebVersion;
     Client.prototype.getWWebVersion = async function patchedGetWWebVersion(...args) {
         let attempt = 0;
-        while (attempt < 4) {
+        while (attempt < 5) {
             try {
+                if (this?.pupPage?.waitForFunction) {
+                    await this.pupPage.waitForFunction('window.Debug?.VERSION !== undefined', { timeout: 5000 });
+                }
                 return await originalGetWWebVersion.apply(this, args);
             } catch (error) {
-                if (!error?.message?.includes('Execution context was destroyed')) {
+                const message = error?.message || '';
+                const shouldRetry = message.includes('Execution context was destroyed') || message.includes('Cannot read properties of undefined') || message.includes('window.Debug');
+                if (!shouldRetry) {
                     throw error;
                 }
                 attempt += 1;
                 const backoff = 250 * attempt;
                 await new Promise(resolve => setTimeout(resolve, backoff));
             }
+        }
+        if (this?.pupPage?.waitForFunction) {
+            await this.pupPage.waitForFunction('window.Debug?.VERSION !== undefined', { timeout: 30000 });
         }
         return await originalGetWWebVersion.apply(this, args);
     };
