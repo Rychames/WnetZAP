@@ -12,6 +12,28 @@ const { exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
+// Retrying around getWWebVersion avoids Puppeteer navigation races on slow hosts
+if (!Client.prototype.__patchedGetWWebVersion) {
+    const originalGetWWebVersion = Client.prototype.getWWebVersion;
+    Client.prototype.getWWebVersion = async function patchedGetWWebVersion(...args) {
+        let attempt = 0;
+        while (attempt < 4) {
+            try {
+                return await originalGetWWebVersion.apply(this, args);
+            } catch (error) {
+                if (!error?.message?.includes('Execution context was destroyed')) {
+                    throw error;
+                }
+                attempt += 1;
+                const backoff = 250 * attempt;
+                await new Promise(resolve => setTimeout(resolve, backoff));
+            }
+        }
+        return await originalGetWWebVersion.apply(this, args);
+    };
+    Client.prototype.__patchedGetWWebVersion = true;
+}
+
 // Express
 const app = express();
 const port = process.env.API_PORT || 4000;
