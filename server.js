@@ -42,6 +42,25 @@ if (!Client.prototype.__patchedGetWWebVersion) {
     Client.prototype.__patchedGetWWebVersion = true;
 }
 
+// Prevent Windows EBUSY cleanup failures from crashing when OneDrive or antivirus holds session files
+if (!LocalAuth.prototype.__patchedSafeLogout) {
+    const originalLogout = LocalAuth.prototype.logout;
+    LocalAuth.prototype.logout = async function safeLogout(...args) {
+        try {
+            return await originalLogout.apply(this, args);
+        } catch (error) {
+            const message = error?.message || '';
+            const isLocked = error?.code === 'EBUSY' || message.includes('EBUSY') || message.includes('resource busy or locked');
+            if (isLocked) {
+                console.warn('LocalAuth logout skipped for locked session artifact:', message);
+                return;
+            }
+            throw error;
+        }
+    };
+    LocalAuth.prototype.__patchedSafeLogout = true;
+}
+
 // Express
 const app = express();
 const port = process.env.API_PORT || 4000;
